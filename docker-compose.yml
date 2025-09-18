@@ -1,0 +1,24 @@
+services:
+#  app-backend:
+#    container_name: app-backend-container
+#    ports:
+#      - "5000:5000"
+#    volumes:
+#      - ./app-backend:/app
+#    command: python app.py
+#    environment:
+#      - PYTHONUNBUFFERED=1
+
+  app-frontend:
+    container_name: app-front-container
+    image: app-front-image
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app-front:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+#    depends_on:
+#      - app-backend
