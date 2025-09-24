@@ -1,6 +1,8 @@
 
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.categorias import router as categorias_router
 
 app = FastAPI(
     title="DuckBills API",
@@ -16,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Inclui as rotas de categorias
+app.include_router(categorias_router)
 
 
 @app.get("/health", tags=["Health"])
