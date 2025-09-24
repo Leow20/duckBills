@@ -7,6 +7,7 @@ from app.categorias import router as categorias_router
 from app.despesas import router as despesas_router
 from app.rendas import router as rendas_router
 from app.contas_recorrentes import router as contas_recorrentes_router
+from app.orcamentos import router as orcamentos_router
 
 app = FastAPI(
     title="DuckBills API",
@@ -34,6 +35,9 @@ app.include_router(rendas_router)
 
 # Inclui as rotas de contas recorrentes
 app.include_router(contas_recorrentes_router)
+
+# Inclui as rotas de orçamentos
+app.include_router(orcamentos_router)
 
 
 @app.get("/health", tags=["Health"])
