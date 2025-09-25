@@ -2,9 +2,9 @@
 Rotas para gerenciamento de rendas.
 """
 
-from fastapi import APIRouter, HTTPException
 from typing import List
 from datetime import date
+from fastapi import APIRouter, HTTPException
 from app.schemas import RendaSchema
 
 router = APIRouter(prefix="/rendas", tags=["Rendas"])
