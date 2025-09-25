@@ -1,3 +1,8 @@
+"""
+Módulo principal da API DuckBills.
+
+Inicializa a aplicação FastAPI, configura CORS e inclui as rotas principais do sistema de controle financeiro.
+"""
 
 
 from fastapi import FastAPI
@@ -42,4 +47,5 @@ app.include_router(orcamentos_router)
 
 @app.get("/health", tags=["Health"])
 def health_check():
+    """Endpoint de verificação de saúde da API (health check)."""
     return {"status": "ok"}
