@@ -13,9 +13,9 @@ router = APIRouter(prefix="/contas-recorrentes", tags=["Contas Recorrentes"])
 _contas_recorrentes_db: List[ContaRecorrenteSchema] = [
     ContaRecorrenteSchema(
         id=1,
-        valor=120.0,
-        descricao="Assinatura Streaming",
-        categoria_id=2,
+        valor=500.0,
+        descricao="Aluguel apartamento",
+        categoria_id=3,
         usuario_id=1,
         tipo="despesa",
         data_inicio=date(2025, 9, 1),
@@ -23,12 +23,142 @@ _contas_recorrentes_db: List[ContaRecorrenteSchema] = [
     ),
     ContaRecorrenteSchema(
         id=2,
-        valor=500.0,
-        descricao="Aluguel",
-        categoria_id=2,
+        valor=35.0,
+        descricao="Spotify",
+        categoria_id=7,
         usuario_id=1,
         tipo="despesa",
+        data_inicio=date(2025, 9, 5),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=3,
+        valor=120.0,
+        descricao="Netflix",
+        categoria_id=7,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 10),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=4,
+        valor=3000.0,
+        descricao="Salário empresa X",
+        categoria_id=1,
+        usuario_id=1,
+        tipo="renda",
         data_inicio=date(2025, 9, 1),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=5,
+        valor=100.0,
+        descricao="Internet banda larga",
+        categoria_id=3,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 2),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=6,
+        valor=250.0,
+        descricao="Plano de saúde",
+        categoria_id=3,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 3),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=7,
+        valor=80.0,
+        descricao="Academia",
+        categoria_id=6,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 4),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=8,
+        valor=200.0,
+        descricao="Aula de inglês",
+        categoria_id=8,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 6),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=9,
+        valor=150.0,
+        descricao="Freelance mensal",
+        categoria_id=2,
+        usuario_id=1,
+        tipo="renda",
+        data_inicio=date(2025, 9, 7),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=10,
+        valor=60.0,
+        descricao="Seguro residencial",
+        categoria_id=3,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 8),
+        frequencia="anual"
+    ),
+    ContaRecorrenteSchema(
+        id=11,
+        valor=45.0,
+        descricao="Amazon Prime",
+        categoria_id=7,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 9),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=12,
+        valor=90.0,
+        descricao="Plano odontológico",
+        categoria_id=3,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 10),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=13,
+        valor=400.0,
+        descricao="Bolsa de estudos",
+        categoria_id=2,
+        usuario_id=1,
+        tipo="renda",
+        data_inicio=date(2025, 9, 11),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=14,
+        valor=75.0,
+        descricao="Clube de leitura",
+        categoria_id=6,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 12),
+        frequencia="mensal"
+    ),
+    ContaRecorrenteSchema(
+        id=15,
+        valor=180.0,
+        descricao="Aula de música",
+        categoria_id=8,
+        usuario_id=1,
+        tipo="despesa",
+        data_inicio=date(2025, 9, 13),
         frequencia="mensal"
     ),
 ]

@@ -11,7 +11,13 @@ router = APIRouter(prefix="/categorias", tags=["Categorias"])
 # Mock database
 categorias_db: List[CategoriaSchema] = [
     CategoriaSchema(id=1, nome="Salário", tipo="renda"),
-    CategoriaSchema(id=2, nome="Aluguel", tipo="despesa"),
+    CategoriaSchema(id=2, nome="Freelance", tipo="renda"),
+    CategoriaSchema(id=3, nome="Aluguel", tipo="despesa"),
+    CategoriaSchema(id=4, nome="Supermercado", tipo="despesa"),
+    CategoriaSchema(id=5, nome="Transporte", tipo="despesa"),
+    CategoriaSchema(id=6, nome="Lazer", tipo="despesa"),
+    CategoriaSchema(id=7, nome="Assinaturas", tipo="despesa"),
+    CategoriaSchema(id=8, nome="Educação", tipo="despesa"),
 ]
 
 
