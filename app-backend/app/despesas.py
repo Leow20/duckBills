@@ -17,7 +17,15 @@ _despesas_db: List[DespesaSchema] = [
     DespesaSchema(id=3, valor=500.0, data=date(2025, 9, 1), descricao="Aluguel apartamento", categoria_id=3, usuario_id=1, recorrente=True),
     DespesaSchema(id=4, valor=60.0, data=date(2025, 9, 10), descricao="Cinema com amigos", categoria_id=6, usuario_id=1, recorrente=False),
     DespesaSchema(id=5, valor=35.0, data=date(2025, 9, 12), descricao="Spotify", categoria_id=7, usuario_id=1, recorrente=True),
-    DespesaSchema(id=6, valor=200.0, data=date(2025, 9, 15), descricao="Curso online Python", categoria_id=8, usuario_id=1, recorrente=False),
+    DespesaSchema(
+        id=6,
+        valor=200.0,
+        data=date(2025, 9, 15),
+        descricao="Curso online Python",
+        categoria_id=8,
+        usuario_id=1,
+        recorrente=False
+    ),
     DespesaSchema(id=7, valor=80.0, data=date(2025, 9, 18), descricao="Academia", categoria_id=6, usuario_id=1, recorrente=True),
     DespesaSchema(id=8, valor=100.0, data=date(2025, 9, 20), descricao="Internet", categoria_id=3, usuario_id=1, recorrente=True),
     DespesaSchema(id=9, valor=45.0, data=date(2025, 9, 22), descricao="Amazon Prime", categoria_id=7, usuario_id=1, recorrente=True),
