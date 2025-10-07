@@ -1,12 +1,39 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { apiService } from '../services/api';
+import ModalLancamento from '../components/ModalLancamento';
+
 export default function Lancamentos() {
-  const lancamentos = [
-    { id: 1, descricao: 'Salário Mensal', categoria: 'Salário', data: '01/08/2025', valor: 6500.00 },
-    { id: 2, descricao: 'Aluguel', categoria: 'Moradia', data: '05/08/2025', valor: -1800.00 },
-    { id: 3, descricao: 'Supermercado Pão de Açúcar', categoria: 'Alimentação', data: '02/08/2025', valor: -750.45 },
-    { id: 4, descricao: 'Uber', categoria: 'Transporte', data: '03/08/2025', valor: -25.50 },
-    { id: 5, descricao: 'Netflix', categoria: 'Lazer', data: '01/08/2025', valor: -45.90 },
-    { id: 6, descricao: 'Freelance Design', categoria: 'Renda Extra', data: '07/08/2025', valor: 1200.00 },
-  ];
+  const [modalOpen, setModalOpen] = useState(false);
+  const [lancamentos, setLancamentos] = useState<Array<{
+    id: number;
+    descricao: string;
+    categoria: string;
+    data: string;
+    valor: number;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLancamentos();
+  }, []);
+
+  const loadLancamentos = async () => {
+    try {
+      setLoading(true);
+      const lancamentosData = await apiService.getLancamentos();
+      setLancamentos(lancamentosData);
+    } catch (error) {
+      console.error('Erro ao carregar lançamentos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveLancamento = () => {
+    loadLancamentos(); // Recarrega os dados após salvar
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -43,22 +70,49 @@ export default function Lancamentos() {
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 className="page-title">Lançamentos</h1>
-        <button className="btn btn-primary">+ Adicionar</button>
+        <button 
+          className="btn btn-primary"
+          onClick={() => setModalOpen(true)}
+        >
+          + Adicionar
+        </button>
       </div>
 
       <div className="card">
         <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Data</th>
-                <th style={{ textAlign: 'right' }}>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lancamentos.map((lancamento) => (
+          {loading ? (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              padding: '4rem',
+              color: '#64748b'
+            }}>
+              Carregando lançamentos...
+            </div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Data</th>
+                  <th style={{ textAlign: 'right' }}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lancamentos.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ 
+                      textAlign: 'center', 
+                      padding: '2rem',
+                      color: '#64748b'
+                    }}>
+                      Nenhum lançamento encontrado. Adicione seu primeiro lançamento!
+                    </td>
+                  </tr>
+                ) : (
+                  lancamentos.map((lancamento) => (
                 <tr key={lancamento.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -99,13 +153,21 @@ export default function Lancamentos() {
                           style={{ fontSize: '1rem', fontWeight: '600' }}>
                       {formatCurrency(lancamento.valor)}
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+      
+      <ModalLancamento
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveLancamento}
+      />
     </div>
   );
 }

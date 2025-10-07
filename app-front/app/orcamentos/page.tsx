@@ -1,46 +1,93 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { apiService, Orcamento } from '../services/api';
+import ModalOrcamento from '../components/ModalOrcamento';
+
 export default function Orcamentos() {
-  const orcamentos = [
-    { 
-      categoria: 'Alimentação', 
-      gasto: 750.45, 
-      orcado: 1000.00, 
-      restante: 249.55,
-      icon: '🛒',
-      color: '#ef4444'
-    },
-    { 
-      categoria: 'Transporte', 
-      gasto: 250.00, 
-      orcado: 400.00, 
-      restante: 150.00,
-      icon: '🚗',
-      color: '#f59e0b'
-    },
-    { 
-      categoria: 'Lazer', 
-      gasto: 280.00, 
-      orcado: 600.00, 
-      restante: 320.00,
-      icon: '🎯',
-      color: '#8b5cf6'
-    },
-    { 
-      categoria: 'Moradia', 
-      gasto: 1800.00, 
-      orcado: 1800.00, 
-      restante: 0.00,
-      icon: '🏠',
-      color: '#3b82f6'
-    },
-    { 
-      categoria: 'Saúde', 
-      gasto: 120.00, 
-      orcado: 300.00, 
-      restante: 180.00,
-      icon: '🏥',
-      color: '#10b981'
+  const [modalOpen, setModalOpen] = useState(false);
+  const [orcamentos, setOrcamentos] = useState<Array<{
+    categoria: string;
+    gasto: number;
+    orcado: number;
+    restante: number;
+    icon: string;
+    color: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadOrcamentos();
+  }, []);
+
+  const loadOrcamentos = async () => {
+    try {
+      setLoading(true);
+      const [orcamentosData, despesasData, categoriasData] = await Promise.all([
+        apiService.getOrcamentos(),
+        apiService.getDespesas(),
+        apiService.getCategorias()
+      ]);
+
+      // Mapeamento de ícones e cores por categoria
+      const iconsECores: { [key: string]: { icon: string, color: string } } = {
+        'Supermercado': { icon: '🛒', color: '#ef4444' },
+        'Transporte': { icon: '🚗', color: '#f59e0b' },
+        'Aluguel': { icon: '🏠', color: '#3b82f6' },
+        'Lazer': { icon: '🎯', color: '#8b5cf6' },
+        'Assinaturas': { icon: '📱', color: '#10b981' },
+        'Educação': { icon: '📚', color: '#6366f1' }
+      };
+
+      // Cria um mapa de categorias
+      const categoriasMap = new Map(categoriasData.map(cat => [cat.id, cat.nome]));
+
+      // Calcula gastos por categoria
+      const gastosPorCategoria = new Map<number, number>();
+      despesasData.forEach(despesa => {
+        const atual = gastosPorCategoria.get(despesa.categoria_id) || 0;
+        gastosPorCategoria.set(despesa.categoria_id, atual + despesa.valor);
+      });
+
+      // Monta os orçamentos com dados reais
+      const orcamentosProcessados = orcamentosData.map(orcamento => {
+        const nomeCategoria = categoriasMap.get(orcamento.categoria_id) || 'Categoria';
+        const gastoAtual = gastosPorCategoria.get(orcamento.categoria_id) || 0;
+        const restante = Math.max(0, orcamento.valor_limite - gastoAtual);
+        const iconECor = iconsECores[nomeCategoria] || { icon: '💳', color: '#64748b' };
+
+        return {
+          categoria: nomeCategoria,
+          gasto: gastoAtual,
+          orcado: orcamento.valor_limite,
+          restante: restante,
+          icon: iconECor.icon,
+          color: iconECor.color
+        };
+      });
+
+      setOrcamentos(orcamentosProcessados);
+    } catch (error) {
+      console.error('Erro ao carregar orçamentos:', error);
+      // Fallback para dados estáticos em caso de erro
+      setOrcamentos([
+        { 
+          categoria: 'Alimentação', 
+          gasto: 0, 
+          orcado: 0, 
+          restante: 0,
+          icon: '🛒',
+          color: '#ef4444'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleSaveOrcamento = () => {
+    loadOrcamentos(); // Recarrega os dados após salvar
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -63,11 +110,37 @@ export default function Orcamentos() {
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 className="page-title">Orçamentos Mensais</h1>
-        <button className="btn btn-primary">+ Adicionar</button>
+        <button 
+          className="btn btn-primary"
+          onClick={() => setModalOpen(true)}
+        >
+          + Adicionar
+        </button>
       </div>
 
-      <div className="grid-3">
-        {orcamentos.map((orcamento, index) => {
+      {loading ? (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: '4rem',
+          color: '#64748b'
+        }}>
+          Carregando orçamentos...
+        </div>
+      ) : (
+        <div className="grid-3">
+          {orcamentos.length === 0 ? (
+            <div style={{ 
+              gridColumn: '1 / -1',
+              textAlign: 'center', 
+              padding: '2rem',
+              color: '#64748b'
+            }}>
+              Nenhum orçamento encontrado. Adicione seu primeiro orçamento!
+            </div>
+          ) : (
+            orcamentos.map((orcamento, index) => {
           const percentage = getProgressPercentage(orcamento.gasto, orcamento.orcado);
           const progressColor = getProgressColor(percentage);
           
@@ -163,9 +236,11 @@ export default function Orcamentos() {
                 )}
               </div>
             </div>
-          );
-        })}
-      </div>
+            );
+            })
+          )}
+        </div>
+      )}
 
       {/* Resumo Geral */}
       <div className="card" style={{ marginTop: '2rem' }}>
@@ -191,6 +266,12 @@ export default function Orcamentos() {
           </div>
         </div>
       </div>
+      
+      <ModalOrcamento
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveOrcamento}
+      />
     </div>
   );
 }

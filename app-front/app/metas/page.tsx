@@ -1,42 +1,33 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { metasService, Meta } from '../services/metas';
+import ModalMeta from '../components/ModalMeta';
+
 export default function Metas() {
-  const metas = [
-    {
-      titulo: 'Viagem para a Europa',
-      valorAtual: 7500.00,
-      valorMeta: 20000.00,
-      prazo: '2026-06-01',
-      descricao: 'Viagem de 3 semanas pela Europa',
-      icon: '✈️',
-      color: '#3b82f6'
-    },
-    {
-      titulo: 'Macbook Pro Novo',
-      valorAtual: 3200.00,
-      valorMeta: 15000.00,
-      prazo: '2025-12-31',
-      descricao: 'Novo laptop para trabalho',
-      icon: '💻',
-      color: '#6366f1'
-    },
-    {
-      titulo: 'Reserva de Emergência',
-      valorAtual: 12000.00,
-      valorMeta: 18000.00,
-      prazo: '2025-12-31',
-      descricao: '6 meses de gastos essenciais',
-      icon: '🛡️',
-      color: '#10b981'
-    },
-    {
-      titulo: 'Curso de Especialização',
-      valorAtual: 800.00,
-      valorMeta: 5000.00,
-      prazo: '2025-11-01',
-      descricao: 'MBA em Gestão de Projetos',
-      icon: '🎓',
-      color: '#f59e0b'
+  const [modalOpen, setModalOpen] = useState(false);
+  const [metas, setMetas] = useState<Meta[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadMetas();
+  }, []);
+
+  const loadMetas = async () => {
+    try {
+      setLoading(true);
+      const metasData = await metasService.getMetas();
+      setMetas(metasData);
+    } catch (error) {
+      console.error('Erro ao carregar metas:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleSaveMeta = () => {
+    loadMetas(); // Recarrega os dados após salvar
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -73,11 +64,37 @@ export default function Metas() {
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 className="page-title">Metas de Poupança</h1>
-        <button className="btn btn-primary">+ Adicionar</button>
+        <button 
+          className="btn btn-primary"
+          onClick={() => setModalOpen(true)}
+        >
+          + Adicionar
+        </button>
       </div>
 
-      <div className="grid-2">
-        {metas.map((meta, index) => {
+      {loading ? (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: '4rem',
+          color: '#64748b'
+        }}>
+          Carregando metas...
+        </div>
+      ) : (
+        <div className="grid-2">
+          {metas.length === 0 ? (
+            <div style={{ 
+              gridColumn: '1 / -1',
+              textAlign: 'center', 
+              padding: '2rem',
+              color: '#64748b'
+            }}>
+              Nenhuma meta encontrada. Adicione sua primeira meta!
+            </div>
+          ) : (
+            metas.map((meta, index) => {
           const percentage = getProgressPercentage(meta.valorAtual, meta.valorMeta);
           const daysLeft = getDaysUntilDeadline(meta.prazo);
           const statusColor = getStatusColor(percentage, daysLeft);
@@ -252,9 +269,11 @@ export default function Metas() {
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+            );
+            })
+          )}
+        </div>
+      )}
 
       {/* Resumo das Metas */}
       <div className="card" style={{ marginTop: '2rem' }}>
@@ -280,6 +299,12 @@ export default function Metas() {
           </div>
         </div>
       </div>
+      
+      <ModalMeta
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveMeta}
+      />
     </div>
   );
 }
