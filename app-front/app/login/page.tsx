@@ -147,26 +147,34 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="auth-divider">
+        <div className="auth-divider" style={{
+            textAlign: 'center'
+        }}>
           <span>ou</span>
         </div>
 
-        <button 
-          className="auth-form-button" 
-          style={{ 
-            backgroundColor: 'white', 
-            color: '#374151', 
-            border: '2px solid #e5e7eb',
+        <div className="loginGoggle" style={{
+            width: '100%',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem'
-          }}
-          onClick={() => alert('Login com Google (Em breve)')}
-        >
-          <span style={{ fontSize: '1.2rem' }}>🚀</span>
-          Continuar com Google
-        </button>
+            justifyContent: 'center'
+        }}>
+            <button 
+            className="auth-form-button" 
+            style={{ 
+                backgroundColor: 'white', 
+                color: '#374151', 
+                border: '2px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+            }}
+            onClick={() => alert('Login com Google (Em breve)')}
+            >
+            <span style={{ fontSize: '1.2rem' }}>🚀</span>
+            Continuar com Google
+            </button>
+        </div>
 
         <div className="auth-link">
           Não tem uma conta?{' '}
