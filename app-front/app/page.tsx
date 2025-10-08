@@ -16,8 +16,8 @@ export default function Home() {
   }, [router]);
   const transacoes = [
     { id: 1, descricao: 'Aluguel', categoria: 'Moradia', data: '05/08/2025', valor: -1800.00 },
-    { id: 2, descricao: 'Supermercado', categoria: 'Alimenta√ß√£o', data: '02/08/2025', valor: -750.45 },
-    { id: 3, descricao: 'Sal√°rio Mensal', categoria: 'Sal√°rio', data: '01/08/2025', valor: 6500.00 },
+    { id: 2, descricao: 'Supermercado', categoria: 'AlimentaÁ„o', data: '02/08/2025', valor: -750.45 },
+    { id: 3, descricao: 'Sal·rio Mensal', categoria: 'Sal·rio', data: '01/08/2025', valor: 6500.00 },
   ];
 
   const formatCurrency = (value: number) => {
@@ -29,12 +29,12 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1 className="page-title">Ol√°, {JSON.parse(usuarioLogadoState)}!</h1>
+      <h1 className="page-title">Ol·, {JSON.parse(usuarioLogadoState)}!</h1>
       
       {/* Cards de Estat√≠sticas */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-label">Balan√ßo</div>
+          <div className="stat-label">BalanÁo</div>
           <div className="stat-value neutral">R$ 6.229,75</div>
         </div>
         <div className="stat-card">
@@ -62,7 +62,7 @@ export default function Home() {
             </div>
             <div className="legend-item">
               <div className="legend-color red"></div>
-              <span>Alimenta√ß√£o 25.0%</span>
+              <span>AlimentaÁ„o 25.0%</span>
             </div>
             <div className="legend-item">
               <div className="legend-color green"></div>
@@ -74,7 +74,7 @@ export default function Home() {
         {/* √öltimos Lan√ßamentos */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">√öltimos Lan√ßamentos</h2>
+            <h2 className="card-title">⁄ltimos LanÁamentos</h2>
           </div>
           <div className="table-container">
             <table className="table">
@@ -88,15 +88,15 @@ export default function Home() {
                           height: '32px',
                           borderRadius: '50%',
                           backgroundColor: transacao.categoria === 'Moradia' ? '#3b82f6' : 
-                                        transacao.categoria === 'Alimenta√ß√£o' ? '#ef4444' : '#10b981',
+                                        transacao.categoria === 'AlimentaÁ„o' ? '#ef4444' : '#10b981',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
                           fontSize: '14px'
                         }}>
-                          {transacao.categoria === 'Moradia' ? 'üè†' : 
-                           transacao.categoria === 'Alimenta√ß√£o' ? 'üõí' : 'üí∞'}
+                          {transacao.categoria === 'Moradia' ? '??' : 
+                           transacao.categoria === 'AlimentaÁ„o' ? '??' : '??'}
                         </div>
                         <div>
                           <div style={{ fontWeight: '500' }}>{transacao.descricao}</div>
