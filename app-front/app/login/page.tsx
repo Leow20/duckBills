@@ -1,15 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+  password: string;
+}
 
 export default function Login() {
+  const router = useRouter();
+  useEffect(() => {
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+    
+    if (usuarioLogado) {
+      router.push("/");
+    }
+  }, [router]);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [usuarios] = useLocalStorage<Usuario[]>("usuarios", []);
+  const [dadosLogin, setDadosLogin] = useState({ email: "", password: "" });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -17,6 +38,8 @@ export default function Login() {
       ...prev,
       [name]: value
     }));
+
+    setDadosLogin((prev) => ({ ...prev, [name]: value }));
     
     // Limpar erro quando usuário começar a digitar
     if (errors[name]) {
@@ -44,6 +67,18 @@ export default function Login() {
       newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
     }
 
+    const usuario = usuarios.find(
+      (u) =>
+        u.email === dadosLogin.email &&
+        u.password === dadosLogin.password
+    );
+
+    if (usuarios.find((u) => u.email !== dadosLogin.email)) {
+      newErrors.email = 'Email não encontrado';
+    }
+    if (usuarios.find((u) => u.password !== dadosLogin.password)) {
+      newErrors.password = 'Senha está incorreta';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -56,15 +91,14 @@ export default function Login() {
     }
 
     setIsLoading(true);
-
-    // Simular chamada da API
-    setTimeout(() => {
-      console.log('Login data:', formData);
-      // Aqui você faria a chamada para o backend
-      // Por enquanto, apenas simula o login
-      alert('Login realizado com sucesso! (Simulação)');
-      setIsLoading(false);
-    }, 1500);
+    const usuario = usuarios.find(
+      (u) =>
+        u.email === dadosLogin.email &&
+        u.password === dadosLogin.password
+    );
+    localStorage.setItem("usuarioLogado", JSON.stringify(usuario?.nome));
+    router.push("/");
+    setIsLoading(false);
   };
 
   return (

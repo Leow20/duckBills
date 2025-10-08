@@ -1,9 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+  password: string;
+}
 
 export default function Cadastro() {
+  const router = useRouter();
+  useEffect(() => {
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+
+    if (usuarioLogado) {
+      router.push("/");
+    }
+  }, [router]);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -14,6 +34,15 @@ export default function Cadastro() {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
+  const [usuarios, setUsuarios] = useLocalStorage<Usuario[]>("usuarios", []);
+  const [novoUsuario, setNovoUsuario] = useState<Omit<Usuario, "id">>({
+    nome: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false
+  });
+  const gerarId = () => crypto.randomUUID();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -21,6 +50,7 @@ export default function Cadastro() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    setNovoUsuario((prev) => ({ ...prev, [name]: value }));
     
     // Limpar erro quando usuário começar a digitar
     if (errors[name]) {
@@ -82,6 +112,11 @@ export default function Cadastro() {
       newErrors.acceptTerms = 'Você deve aceitar os termos de uso';
     }
 
+    const existeEmail = usuarios.some((u) => u.email === novoUsuario.email);
+    if (existeEmail) {
+      newErrors.email = 'E-mail já cadastrado';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -94,18 +129,11 @@ export default function Cadastro() {
     }
 
     setIsLoading(true);
-
-    // Simular chamada da API
-    setTimeout(() => {
-      console.log('Cadastro data:', {
-        nome: formData.nome,
-        email: formData.email,
-        password: formData.password
-      });
-      // Aqui você faria a chamada para o backend
-      alert('Cadastro realizado com sucesso! (Simulação)');
-      setIsLoading(false);
-    }, 2000);
+    const usuarioComId: Usuario = { id: gerarId(), ...novoUsuario };
+    setUsuarios([...usuarios, usuarioComId]);
+    localStorage.setItem("usuarioLogado", JSON.stringify({nome: formData.nome}));
+    router.push("/");
+    setIsLoading(false);
   };
 
   const getPasswordStrengthText = () => {
@@ -255,22 +283,28 @@ export default function Cadastro() {
           <span>ou</span>
         </div>
 
-        <button 
-          className="auth-form-button" 
-          style={{ 
-            backgroundColor: 'white', 
-            color: '#374151', 
-            border: '2px solid #e5e7eb',
+        <div className="loginGoggle" style={{
+            width: '100%',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem'
-          }}
-          onClick={() => alert('Cadastro com Google (Em breve)')}
-        >
-          <span style={{ fontSize: '1.2rem' }}>🚀</span>
-          Cadastrar com Google
-        </button>
+            justifyContent: 'center'
+        }}>
+            <button 
+            className="auth-form-button" 
+            style={{ 
+                backgroundColor: 'white', 
+                color: '#374151', 
+                border: '2px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+            }}
+            onClick={() => alert('Cadastro com Google (Em breve)')}
+            >
+            <span style={{ fontSize: '1.2rem' }}>🚀</span>
+            Cadastrar com Google
+            </button>
+        </div>
 
         <div className="auth-link">
           Já tem uma conta?{' '}

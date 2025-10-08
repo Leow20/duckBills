@@ -1,4 +1,19 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useRouter } from "next/navigation";
+
 export default function Home() {
+  const router = useRouter();
+  const [usuarioLogadoState, setUsuarioLogado] = useState<any>(null);
+  useEffect(() => {
+    const usuarioLogado = localStorage.getItem("usuarioLogado");
+    if (!usuarioLogado) {
+      router.push("/login");
+    } else {
+        setUsuarioLogado(usuarioLogado);
+    }
+  }, [router]);
   const transacoes = [
     { id: 1, descricao: 'Aluguel', categoria: 'Moradia', data: '05/08/2025', valor: -1800.00 },
     { id: 2, descricao: 'Supermercado', categoria: 'Alimentação', data: '02/08/2025', valor: -750.45 },
@@ -14,7 +29,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1 className="page-title">Olá, Lori!</h1>
+      <h1 className="page-title">Olá, {JSON.parse(usuarioLogadoState)}!</h1>
       
       {/* Cards de Estatísticas */}
       <div className="stats-grid">
