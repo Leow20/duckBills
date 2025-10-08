@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiService, Categoria } from '../services/api';
+import { apiService, Categoria, Orcamento } from '../services/api';
+import { useDashboard } from '../contexts/DashboardContext';
 
 interface ModalOrcamentoProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  editingOrcamento?: Orcamento | null;
 }
 
-export default function ModalOrcamento({ isOpen, onClose, onSave }: ModalOrcamentoProps) {
+export default function ModalOrcamento({ isOpen, onClose, onSave, editingOrcamento }: ModalOrcamentoProps) {
   const [formData, setFormData] = useState({
     categoria_id: 0,
     valor_limite: '',
@@ -18,12 +20,22 @@ export default function ModalOrcamento({ isOpen, onClose, onSave }: ModalOrcamen
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
+  const { triggerRefresh } = useDashboard();
 
   useEffect(() => {
     if (isOpen) {
       loadCategorias();
+      
+      // Preenche o formulário se estamos editando
+      if (editingOrcamento) {
+        setFormData({
+          categoria_id: editingOrcamento.categoria_id,
+          valor_limite: editingOrcamento.valor_limite.toString(),
+          periodo: editingOrcamento.periodo
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, editingOrcamento]);
 
   const loadCategorias = async () => {
     try {
@@ -52,8 +64,16 @@ export default function ModalOrcamento({ isOpen, onClose, onSave }: ModalOrcamen
         periodo: formData.periodo
       };
       
-      await apiService.createOrcamento(orcamentoData);
+      if (editingOrcamento) {
+        // Editando orçamento existente
+        await apiService.updateOrcamento(editingOrcamento.id, orcamentoData);
+      } else {
+        // Criando novo orçamento
+        await apiService.createOrcamento(orcamentoData);
+      }
+      
       onSave();
+      triggerRefresh(); // Atualiza o dashboard
       handleClose();
     } catch (error) {
       console.error('Erro ao salvar orçamento:', error);
@@ -108,7 +128,7 @@ export default function ModalOrcamento({ isOpen, onClose, onSave }: ModalOrcamen
             color: '#1e293b',
             margin: 0
           }}>
-            Adicionar Orçamento
+            {editingOrcamento ? 'Editar Orçamento' : 'Adicionar Orçamento'}
           </h2>
           <button
             onClick={handleClose}
@@ -204,7 +224,7 @@ export default function ModalOrcamento({ isOpen, onClose, onSave }: ModalOrcamen
               transition: 'background-color 0.2s'
             }}
           >
-            {loading ? 'Salvando...' : 'Adicionar Orçamento'}
+            {loading ? 'Salvando...' : (editingOrcamento ? 'Salvar Alterações' : 'Adicionar Orçamento')}
           </button>
         </form>
       </div>

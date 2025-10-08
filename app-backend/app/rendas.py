@@ -31,7 +31,29 @@ def listar_rendas() -> List[RendaSchema]:
 @router.post("/", response_model=RendaSchema, status_code=201)
 def criar_renda(renda: RendaSchema) -> RendaSchema:
     """Cria uma nova renda."""
-    if any(r.id == renda.id for r in _rendas_db):
-        raise HTTPException(status_code=400, detail="ID de renda já existe.")
+    # Gera um novo ID automaticamente
+    novo_id = max([r.id for r in _rendas_db], default=0) + 1
+    renda.id = novo_id
     _rendas_db.append(renda)
     return renda
+
+
+@router.put("/{renda_id}", response_model=RendaSchema)
+def atualizar_renda(renda_id: int, renda_atualizada: RendaSchema) -> RendaSchema:
+    """Atualiza uma renda existente."""
+    for i, renda in enumerate(_rendas_db):
+        if renda.id == renda_id:
+            renda_atualizada.id = renda_id
+            _rendas_db[i] = renda_atualizada
+            return renda_atualizada
+    raise HTTPException(status_code=404, detail="Renda não encontrada.")
+
+
+@router.delete("/{renda_id}")
+def excluir_renda(renda_id: int) -> dict:
+    """Exclui uma renda."""
+    for i, renda in enumerate(_rendas_db):
+        if renda.id == renda_id:
+            del _rendas_db[i]
+            return {"message": "Renda excluída com sucesso."}
+    raise HTTPException(status_code=404, detail="Renda não encontrada.")

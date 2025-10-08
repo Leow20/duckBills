@@ -8,16 +8,43 @@ export default function Lancamentos() {
   const [modalOpen, setModalOpen] = useState(false);
   const [lancamentos, setLancamentos] = useState<Array<{
     id: number;
+    originalId: number;
     descricao: string;
     categoria: string;
+    categoria_id: number;
     data: string;
+    dataOriginal: string;
     valor: number;
+    tipo: 'renda' | 'despesa';
+    recorrente?: boolean;
   }>>([]);
+  const [filteredLancamentos, setFilteredLancamentos] = useState<typeof lancamentos>([]);
   const [loading, setLoading] = useState(true);
+  const [editingLancamento, setEditingLancamento] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   useEffect(() => {
     loadLancamentos();
   }, []);
+
+  useEffect(() => {
+    filterLancamentos();
+  }, [lancamentos, selectedMonth]);
+
+  const filterLancamentos = () => {
+    if (!selectedMonth) {
+      setFilteredLancamentos(lancamentos);
+      return;
+    }
+
+    const filtered = lancamentos.filter(lancamento => {
+      const [day, month, year] = lancamento.data.split('/');
+      const lancamentoMonth = `${year}-${month.padStart(2, '0')}`;
+      return lancamentoMonth === selectedMonth;
+    });
+
+    setFilteredLancamentos(filtered);
+  };
 
   const loadLancamentos = async () => {
     try {
@@ -33,6 +60,44 @@ export default function Lancamentos() {
 
   const handleSaveLancamento = () => {
     loadLancamentos(); // Recarrega os dados após salvar
+    setEditingLancamento(null);
+  };
+
+  const handleEditLancamento = (lancamento: any) => {
+    setEditingLancamento(lancamento);
+    setModalOpen(true);
+  };
+
+  const handleDeleteLancamento = async (originalId: number, tipo: 'renda' | 'despesa') => {
+    if (window.confirm('Tem certeza que deseja excluir este lançamento?')) {
+      try {
+        await apiService.deleteLancamento(originalId, tipo);
+        loadLancamentos();
+      } catch (error) {
+        console.error('Erro ao excluir lançamento:', error);
+        alert('Erro ao excluir lançamento. Tente novamente.');
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingLancamento(null);
+  };
+
+  const getMonthOptions = () => {
+    const months = [];
+    const currentDate = new Date();
+    
+    // Gera opções para os últimos 12 meses
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      months.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+    }
+    
+    return months;
   };
 
   const formatCurrency = (value: number) => {
@@ -68,14 +133,34 @@ export default function Lancamentos() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h1 className="page-title">Lançamentos</h1>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setModalOpen(true)}
-        >
-          + Adicionar
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '8px',
+              border: '2px solid #e2e8f0',
+              fontSize: '0.9rem',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              minWidth: '160px'
+            }}
+          >
+            <option value="">Todos os meses</option>
+            {getMonthOptions().map(month => (
+              <option key={month.value} value={month.value}>{month.label}</option>
+            ))}
+          </select>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setModalOpen(true)}
+          >
+            + Adicionar
+          </button>
+        </div>
       </div>
 
       <div className="card">
@@ -98,21 +183,25 @@ export default function Lancamentos() {
                   <th>Categoria</th>
                   <th>Data</th>
                   <th style={{ textAlign: 'right' }}>Valor</th>
+                  <th style={{ textAlign: 'center', width: '120px' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {lancamentos.length === 0 ? (
+                {filteredLancamentos.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ 
+                    <td colSpan={5} style={{ 
                       textAlign: 'center', 
                       padding: '2rem',
                       color: '#64748b'
                     }}>
-                      Nenhum lançamento encontrado. Adicione seu primeiro lançamento!
+                      {selectedMonth 
+                        ? 'Nenhum lançamento encontrado para este mês.'
+                        : 'Nenhum lançamento encontrado. Adicione seu primeiro lançamento!'
+                      }
                     </td>
                   </tr>
                 ) : (
-                  lancamentos.map((lancamento) => (
+                  filteredLancamentos.map((lancamento) => (
                 <tr key={lancamento.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -153,7 +242,43 @@ export default function Lancamentos() {
                           style={{ fontSize: '1rem', fontWeight: '600' }}>
                       {formatCurrency(lancamento.valor)}
                     </span>
-                    </td>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button
+                        onClick={() => handleEditLancamento(lancamento)}
+                        style={{
+                          // backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLancamento(lancamento.originalId, lancamento.tipo)}
+                        style={{
+                          backgroundColor: '#f7bdbdff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}
+                        title="Excluir"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
                   </tr>
                   ))
                 )}
@@ -165,8 +290,9 @@ export default function Lancamentos() {
       
       <ModalLancamento
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveLancamento}
+        editingLancamento={editingLancamento}
       />
     </div>
   );

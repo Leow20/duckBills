@@ -12,12 +12,12 @@ router = APIRouter(prefix="/despesas", tags=["Despesas"])
 
 # Mock database
 _despesas_db: List[DespesaSchema] = [
-    DespesaSchema(id=1, valor=120.0, data=date(2025, 9, 1), descricao="Supermercado mês", categoria_id=4, usuario_id=1, recorrente=False),
+    DespesaSchema(id=1, valor=120.0, data=date(2025, 10, 1), descricao="Supermercado mês", categoria_id=4, usuario_id=1, recorrente=False),
     DespesaSchema(id=2, valor=50.0, data=date(2025, 9, 5), descricao="Uber ida trabalho", categoria_id=5, usuario_id=1, recorrente=False),
     DespesaSchema(id=3, valor=500.0, data=date(2025, 9, 1), descricao="Aluguel apartamento", categoria_id=3, usuario_id=1, recorrente=True),
     DespesaSchema(id=4, valor=60.0, data=date(2025, 9, 10), descricao="Cinema com amigos", categoria_id=6, usuario_id=1, recorrente=False),
     DespesaSchema(id=5, valor=35.0, data=date(2025, 9, 12), descricao="Spotify", categoria_id=7, usuario_id=1, recorrente=True),
-    DespesaSchema(
+    DespesaSchema( 
         id=6,
         valor=200.0,
         data=date(2025, 9, 15),
@@ -44,7 +44,29 @@ def listar_despesas() -> List[DespesaSchema]:
 @router.post("/", response_model=DespesaSchema, status_code=201)
 def criar_despesa(despesa: DespesaSchema) -> DespesaSchema:
     """Cria uma nova despesa."""
-    if any(d.id == despesa.id for d in _despesas_db):
-        raise HTTPException(status_code=400, detail="ID de despesa já existe.")
+    # Gera um novo ID automaticamente
+    novo_id = max([d.id for d in _despesas_db], default=0) + 1
+    despesa.id = novo_id
     _despesas_db.append(despesa)
     return despesa
+
+
+@router.put("/{despesa_id}", response_model=DespesaSchema)
+def atualizar_despesa(despesa_id: int, despesa_atualizada: DespesaSchema) -> DespesaSchema:
+    """Atualiza uma despesa existente."""
+    for i, despesa in enumerate(_despesas_db):
+        if despesa.id == despesa_id:
+            despesa_atualizada.id = despesa_id
+            _despesas_db[i] = despesa_atualizada
+            return despesa_atualizada
+    raise HTTPException(status_code=404, detail="Despesa não encontrada.")
+
+
+@router.delete("/{despesa_id}")
+def excluir_despesa(despesa_id: int) -> dict:
+    """Exclui uma despesa."""
+    for i, despesa in enumerate(_despesas_db):
+        if despesa.id == despesa_id:
+            del _despesas_db[i]
+            return {"message": "Despesa excluída com sucesso."}
+    raise HTTPException(status_code=404, detail="Despesa não encontrada.")

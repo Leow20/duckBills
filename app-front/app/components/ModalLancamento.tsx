@@ -2,14 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { apiService, Categoria } from '../services/api';
+import { useDashboard } from '../contexts/DashboardContext';
 
 interface ModalLancamentoProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (lancamento: any) => void;
+  editingLancamento?: {
+    id: number;
+    originalId: number;
+    descricao: string;
+    categoria_id: number;
+    dataOriginal: string;
+    valor: number;
+    tipo: 'renda' | 'despesa';
+    recorrente?: boolean;
+  } | null;
 }
 
-export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancamentoProps) {
+export default function ModalLancamento({ isOpen, onClose, onSave, editingLancamento }: ModalLancamentoProps) {
   const [formData, setFormData] = useState({
     descricao: '',
     valor: '',
@@ -20,12 +31,22 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
+  const { triggerRefresh } = useDashboard();
 
   useEffect(() => {
     if (isOpen) {
       loadCategorias();
+      if (editingLancamento) {
+        setFormData({
+          descricao: editingLancamento.descricao,
+          valor: Math.abs(editingLancamento.valor).toString(),
+          data: editingLancamento.dataOriginal,
+          categoria_id: editingLancamento.categoria_id,
+          tipo: editingLancamento.tipo
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, editingLancamento]);
 
   const loadCategorias = async () => {
     try {
@@ -50,28 +71,44 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
     try {
       const valorNumerico = parseFloat(formData.valor);
       
-      if (formData.tipo === 'renda') {
-        const rendaData = {
+      if (editingLancamento) {
+        // Editando lançamento existente
+        await apiService.updateLancamento({
+          id: editingLancamento.id,
+          originalId: editingLancamento.originalId,
+          tipo: formData.tipo as 'renda' | 'despesa',
+          descricao: formData.descricao,
           valor: valorNumerico,
           data: formData.data,
-          descricao: formData.descricao,
           categoria_id: formData.categoria_id,
-          usuario_id: 1
-        };
-        await apiService.createRenda(rendaData);
+          recorrente: editingLancamento.recorrente
+        });
       } else {
-        const despesaData = {
-          valor: valorNumerico,
-          data: formData.data,
-          descricao: formData.descricao,
-          categoria_id: formData.categoria_id,
-          usuario_id: 1,
-          recorrente: false
-        };
-        await apiService.createDespesa(despesaData);
+        // Criando novo lançamento
+        if (formData.tipo === 'renda') {
+          const rendaData = {
+            valor: valorNumerico,
+            data: formData.data,
+            descricao: formData.descricao,
+            categoria_id: formData.categoria_id,
+            usuario_id: 1
+          };
+          await apiService.createRenda(rendaData);
+        } else {
+          const despesaData = {
+            valor: valorNumerico,
+            data: formData.data,
+            descricao: formData.descricao,
+            categoria_id: formData.categoria_id,
+            usuario_id: 1,
+            recorrente: false
+          };
+          await apiService.createDespesa(despesaData);
+        }
       }
       
       onSave(null); // Notifica que houve mudança para recarregar dados
+      triggerRefresh(); // Atualiza o dashboard
       handleClose();
     } catch (error) {
       console.error('Erro ao salvar lançamento:', error);
@@ -128,7 +165,7 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
             color: '#1e293b',
             margin: 0
           }}>
-            Adicionar Lançamento
+            {editingLancamento ? 'Editar Lançamento' : 'Adicionar Lançamento'}
           </h2>
           <button
             onClick={handleClose}
@@ -144,6 +181,63 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
             ×
           </button>
         </div>
+
+         <div style={{
+            display: 'flex',
+            gap: '1rem',
+            marginBottom: '15px'
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ ...formData, tipo: 'renda' });
+                // Atualiza categoria_id para uma categoria de renda se disponível
+                const categoriasRenda = categorias.filter(c => c.tipo === 'renda');
+                if (categoriasRenda.length > 0) {
+                  setFormData(prev => ({ ...prev, tipo: 'renda', categoria_id: categoriasRenda[0].id }));
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                backgroundColor: formData.tipo === 'renda' ? '#10b981' : '#f1f5f9',
+                color: formData.tipo === 'renda' ? 'white' : '#64748b'
+              }}
+            >
+              Receita
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ ...formData, tipo: 'despesa' });
+                // Atualiza categoria_id para uma categoria de despesa se disponível
+                const categoriasDespesa = categorias.filter(c => c.tipo === 'despesa');
+                if (categoriasDespesa.length > 0) {
+                  setFormData(prev => ({ ...prev, tipo: 'despesa', categoria_id: categoriasDespesa[0].id }));
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                backgroundColor: formData.tipo === 'despesa' ? '#ef4444' : '#f1f5f9',
+                color: formData.tipo === 'despesa' ? 'white' : '#64748b'
+              }}
+            >
+              Despesa
+            </button>
+          </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1.5rem' }}>
@@ -278,63 +372,6 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
             </select>
           </div>
 
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            <button
-              type="button"
-              onClick={() => {
-                setFormData({ ...formData, tipo: 'renda' });
-                // Atualiza categoria_id para uma categoria de renda se disponível
-                const categoriasRenda = categorias.filter(c => c.tipo === 'renda');
-                if (categoriasRenda.length > 0) {
-                  setFormData(prev => ({ ...prev, tipo: 'renda', categoria_id: categoriasRenda[0].id }));
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: formData.tipo === 'renda' ? '#10b981' : '#f1f5f9',
-                color: formData.tipo === 'renda' ? 'white' : '#64748b'
-              }}
-            >
-              Receita
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setFormData({ ...formData, tipo: 'despesa' });
-                // Atualiza categoria_id para uma categoria de despesa se disponível
-                const categoriasDespesa = categorias.filter(c => c.tipo === 'despesa');
-                if (categoriasDespesa.length > 0) {
-                  setFormData(prev => ({ ...prev, tipo: 'despesa', categoria_id: categoriasDespesa[0].id }));
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: formData.tipo === 'despesa' ? '#ef4444' : '#f1f5f9',
-                color: formData.tipo === 'despesa' ? 'white' : '#64748b'
-              }}
-            >
-              Despesa
-            </button>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -359,7 +396,7 @@ export default function ModalLancamento({ isOpen, onClose, onSave }: ModalLancam
               if (!loading) target.style.backgroundColor = '#6366f1';
             }}
           >
-            {loading ? 'Salvando...' : 'Adicionar Lançamento'}
+            {loading ? 'Salvando...' : (editingLancamento ? 'Salvar Alterações' : 'Adicionar Lançamento')}
           </button>
         </form>
       </div>

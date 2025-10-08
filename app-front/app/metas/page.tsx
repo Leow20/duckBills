@@ -1,13 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { metasService, Meta } from '../services/metas';
+import { apiService, Meta } from '../services/api';
 import ModalMeta from '../components/ModalMeta';
+import ModalAdicionarValor from '../components/ModalAdicionarValor';
+import { formatDateToBR, getCurrentDateISO } from '../utils/dateUtils';
+
+// Interface local estendida para incluir ícone e cor
+interface MetaExtended extends Meta {
+  icon: string;
+  color: string;
+}
 
 export default function Metas() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [metas, setMetas] = useState<Meta[]>([]);
+  const [metas, setMetas] = useState<MetaExtended[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingMeta, setEditingMeta] = useState<Meta | null>(null);
+  const [addValueModalOpen, setAddValueModalOpen] = useState(false);
+  const [selectedMetaId, setSelectedMetaId] = useState<number | null>(null);
 
   useEffect(() => {
     loadMetas();
@@ -16,8 +27,28 @@ export default function Metas() {
   const loadMetas = async () => {
     try {
       setLoading(true);
-      const metasData = await metasService.getMetas();
-      setMetas(metasData);
+      const metasData = await apiService.getMetas();
+      
+      // Mapeamento de ícones e cores por título
+      const iconsECores: { [key: string]: { icon: string, color: string } } = {
+        'Viagem para a Europa': { icon: '✈️', color: '#3b82f6' },
+        'Macbook Pro Novo': { icon: '💻', color: '#6366f1' },
+        'Reserva de Emergência': { icon: '🛡️', color: '#10b981' },
+        'Curso de Especialização': { icon: '🎓', color: '#f59e0b' },
+        // Defaults
+        'default': { icon: '🎯', color: '#8b5cf6' }
+      };
+      
+      const metasExtended = metasData.map(meta => {
+        const iconECor = iconsECores[meta.titulo] || iconsECores['default'];
+        return {
+          ...meta,
+          icon: iconECor.icon,
+          color: iconECor.color
+        };
+      });
+      
+      setMetas(metasExtended);
     } catch (error) {
       console.error('Erro ao carregar metas:', error);
     } finally {
@@ -27,6 +58,58 @@ export default function Metas() {
 
   const handleSaveMeta = () => {
     loadMetas(); // Recarrega os dados após salvar
+    setEditingMeta(null); // Limpa o estado de edição
+  };
+
+  const handleEditMeta = (meta: MetaExtended) => {
+    // Converte para o formato da API
+    const metaParaEdicao: Meta = {
+      id: meta.id,
+      titulo: meta.titulo,
+      valor_atual: meta.valor_atual,
+      valor_meta: meta.valor_meta,
+      prazo: meta.prazo,
+      descricao: meta.descricao,
+      usuario_id: meta.usuario_id
+    };
+    setEditingMeta(metaParaEdicao);
+    setModalOpen(true);
+  };
+
+  const handleDeleteMeta = async (id: number) => {
+    if (confirm('Tem certeza que deseja excluir esta meta?')) {
+      try {
+        await apiService.deleteMeta(id);
+        loadMetas(); // Recarrega os dados após excluir
+      } catch (error) {
+        console.error('Erro ao excluir meta:', error);
+        alert('Erro ao excluir meta. Tente novamente.');
+      }
+    }
+  };
+
+  const handleAddValue = (metaId: number) => {
+    setSelectedMetaId(metaId);
+    setAddValueModalOpen(true);
+  };
+
+  const handleAddValueSubmit = async (valor: number) => {
+    if (selectedMetaId && valor > 0) {
+      try {
+        await apiService.adicionarValorMeta(selectedMetaId, valor);
+        loadMetas(); // Recarrega os dados após adicionar valor
+        setAddValueModalOpen(false);
+        setSelectedMetaId(null);
+      } catch (error) {
+        console.error('Erro ao adicionar valor:', error);
+        alert('Erro ao adicionar valor à meta. Tente novamente.');
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingMeta(null);
   };
 
   const formatCurrency = (value: number) => {
@@ -37,7 +120,7 @@ export default function Metas() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatDateToBR(dateString);
   };
 
   const getProgressPercentage = (atual: number, meta: number) => {
@@ -45,10 +128,19 @@ export default function Metas() {
   };
 
   const getDaysUntilDeadline = (prazo: string) => {
-    const today = new Date();
-    const deadline = new Date(prazo);
-    const diffTime = deadline.getTime() - today.getTime();
+    // Obter a data atual no formato ISO
+    const today = getCurrentDateISO();
+    
+    // Converter ambas as datas para objetos Date sem problemas de timezone
+    const [todayYear, todayMonth, todayDay] = today.split('-').map(Number);
+    const [prazoYear, prazoMonth, prazoDay] = prazo.split('-').map(Number);
+    
+    const todayDate = new Date(todayYear, todayMonth - 1, todayDay);
+    const prazoDate = new Date(prazoYear, prazoMonth - 1, prazoDay);
+    
+    const diffTime = prazoDate.getTime() - todayDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
     return diffDays;
   };
 
@@ -95,10 +187,10 @@ export default function Metas() {
             </div>
           ) : (
             metas.map((meta, index) => {
-          const percentage = getProgressPercentage(meta.valorAtual, meta.valorMeta);
+          const percentage = getProgressPercentage(meta.valor_atual, meta.valor_meta);
           const daysLeft = getDaysUntilDeadline(meta.prazo);
           const statusColor = getStatusColor(percentage, daysLeft);
-          const restante = meta.valorMeta - meta.valorAtual;
+          const restante = meta.valor_meta - meta.valor_atual;
 
           return (
             <div key={index} className="card">
@@ -201,7 +293,7 @@ export default function Metas() {
                     fontWeight: '700',
                     color: '#1e293b'
                   }}>
-                    {formatCurrency(meta.valorAtual)}
+                    {formatCurrency(meta.valor_atual)}
                   </div>
                 </div>
                 
@@ -220,7 +312,7 @@ export default function Metas() {
                     fontWeight: '700',
                     color: '#1e293b'
                   }}>
-                    {formatCurrency(meta.valorMeta)}
+                    {formatCurrency(meta.valor_meta)}
                   </div>
                 </div>
 
@@ -260,11 +352,41 @@ export default function Metas() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.875rem' }}>
-                    Editar
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '6px 12px', fontSize: '0.875rem' }}
+                    onClick={() => handleEditMeta(meta)}
+                  >
+                    📝 Editar
                   </button>
-                  <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.875rem' }}>
-                    + Valor
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ padding: '6px 12px', fontSize: '0.875rem' }}
+                    onClick={() => handleAddValue(meta.id)}
+                  >
+                    💰 + Valor
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMeta(meta.id)}
+                    style={{
+                      padding: '6px 12px',
+                      border: '1px solid #fecaca',
+                      borderRadius: '6px',
+                      backgroundColor: '#fef2f2',
+                      color: '#dc2626',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fecaca';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fef2f2';
+                    }}
+                  >
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -282,19 +404,19 @@ export default function Metas() {
           <div className="stat-card">
             <div className="stat-label">Total Poupado</div>
             <div className="stat-value positive">
-              {formatCurrency(metas.reduce((sum, meta) => sum + meta.valorAtual, 0))}
+              {formatCurrency(metas.reduce((sum, meta) => sum + meta.valor_atual, 0))}
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Total das Metas</div>
             <div className="stat-value neutral">
-              {formatCurrency(metas.reduce((sum, meta) => sum + meta.valorMeta, 0))}
+              {formatCurrency(metas.reduce((sum, meta) => sum + meta.valor_meta, 0))}
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Falta Poupar</div>
             <div className="stat-value negative">
-              {formatCurrency(metas.reduce((sum, meta) => sum + (meta.valorMeta - meta.valorAtual), 0))}
+              {formatCurrency(metas.reduce((sum, meta) => sum + (meta.valor_meta - meta.valor_atual), 0))}
             </div>
           </div>
         </div>
@@ -302,9 +424,23 @@ export default function Metas() {
       
       <ModalMeta
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveMeta}
+        editingMeta={editingMeta}
       />
+
+      {/* Modal para Adicionar Valor */}
+      {addValueModalOpen && (
+        <ModalAdicionarValor
+          isOpen={addValueModalOpen}
+          onClose={() => {
+            setAddValueModalOpen(false);
+            setSelectedMetaId(null);
+          }}
+          onSubmit={handleAddValueSubmit}
+          metaTitulo={metas.find(m => m.id === selectedMetaId)?.titulo || ''}
+        />
+      )}
     </div>
   );
 }

@@ -66,3 +66,14 @@ class OrcamentoSchema(BaseModel):
     usuario_id: int
     valor_limite: float
     periodo: str  # 'mensal', 'anual'
+
+
+class MetaSchema(BaseModel):
+    """Schema para definição de meta financeira."""
+    id: int
+    titulo: str
+    valor_atual: float
+    valor_meta: float
+    prazo: date
+    descricao: Optional[str] = None
+    usuario_id: int

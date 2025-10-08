@@ -1,38 +1,71 @@
 'use client';
 
-import { useState } from 'react';
-import { metasService } from '../services/metas';
+import { useState, useEffect } from 'react';
+import { apiService, Meta } from '../services/api';
 
 interface ModalMetaProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  editingMeta?: Meta | null;
 }
 
-export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
+export default function ModalMeta({ isOpen, onClose, onSave, editingMeta }: ModalMetaProps) {
   const [formData, setFormData] = useState({
-    nome: '',
-    valorAlvo: '',
-    valorGuardado: ''
+    titulo: '',
+    valor_meta: '',
+    valor_atual: '',
+    prazo: '',
+    descricao: ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingMeta) {
+        // Preenchendo o formulário para edição
+        setFormData({
+          titulo: editingMeta.titulo,
+          valor_meta: editingMeta.valor_meta.toString(),
+          valor_atual: editingMeta.valor_atual.toString(),
+          prazo: editingMeta.prazo,
+          descricao: editingMeta.descricao || ''
+        });
+      } else {
+        // Resetando o formulário para nova meta
+        setFormData({
+          titulo: '',
+          valor_meta: '',
+          valor_atual: '0',
+          prazo: '',
+          descricao: ''
+        });
+      }
+    }
+  }, [isOpen, editingMeta]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const novaMeta = {
-        titulo: formData.nome,
-        valorMeta: parseFloat(formData.valorAlvo),
-        valorAtual: parseFloat(formData.valorGuardado || '0'),
-        prazo: '2025-12-31', // Data padrão, pode ser expandido depois
-        descricao: formData.nome,
-        icon: '🎯', // Ícone padrão, pode ser expandido depois
-        color: '#3b82f6' // Cor padrão, pode ser expandido depois
+      const metaData = {
+        titulo: formData.titulo,
+        valor_meta: parseFloat(formData.valor_meta),
+        valor_atual: parseFloat(formData.valor_atual || '0'),
+        prazo: formData.prazo,
+        descricao: formData.descricao,
+        usuario_id: 1 // Hardcoded por enquanto
       };
       
-      await metasService.createMeta(novaMeta);
+      if (editingMeta) {
+        // Editando meta existente
+        await apiService.updateMeta(editingMeta.id, metaData);
+      } else {
+        // Criando nova meta
+        await apiService.createMeta(metaData);
+      }
+      
       onSave();
       handleClose();
     } catch (error) {
@@ -45,9 +78,11 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
 
   const handleClose = () => {
     setFormData({
-      nome: '',
-      valorAlvo: '',
-      valorGuardado: ''
+      titulo: '',
+      valor_meta: '',
+      valor_atual: '',
+      prazo: '',
+      descricao: ''
     });
     onClose();
   };
@@ -88,7 +123,7 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
             color: '#1e293b',
             margin: 0
           }}>
-            Adicionar Meta
+            {editingMeta ? '📝 Editar Meta' : '🎯 Adicionar Meta'}
           </h2>
           <button
             onClick={handleClose}
@@ -114,14 +149,41 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
               color: '#64748b',
               marginBottom: '0.5rem'
             }}>
-              Nome da Meta
+              Título da Meta
             </label>
             <input
               type="text"
-              value={formData.nome}
-              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              value={formData.titulo}
+              onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
               placeholder="Viagem para a Europa"
               required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#64748b',
+              marginBottom: '0.5rem'
+            }}>
+              Descrição
+            </label>
+            <input
+              type="text"
+              value={formData.descricao}
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              placeholder="Breve descrição da meta"
               style={{
                 width: '100%',
                 padding: '0.75rem',
@@ -138,7 +200,7 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: '1rem',
-            marginBottom: '2rem'
+            marginBottom: '1.5rem'
           }}>
             <div>
               <label style={{
@@ -148,14 +210,14 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
                 color: '#64748b',
                 marginBottom: '0.5rem'
               }}>
-                Valor Alvo
+                Valor Meta
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={formData.valorAlvo}
-                onChange={(e) => setFormData({ ...formData, valorAlvo: e.target.value })}
-                placeholder="R$ 20.000,00"
+                value={formData.valor_meta}
+                onChange={(e) => setFormData({ ...formData, valor_meta: e.target.value })}
+                placeholder="20000"
                 required
                 style={{
                   width: '100%',
@@ -177,14 +239,14 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
                 color: '#64748b',
                 marginBottom: '0.5rem'
               }}>
-                Valor Guardado
+                Valor Atual
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={formData.valorGuardado}
-                onChange={(e) => setFormData({ ...formData, valorGuardado: e.target.value })}
-                placeholder="R$ 755.500,00"
+                value={formData.valor_atual}
+                onChange={(e) => setFormData({ ...formData, valor_atual: e.target.value })}
+                placeholder="7500"
                 style={{
                   width: '100%',
                   padding: '0.75rem',
@@ -196,6 +258,33 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
                 }}
               />
             </div>
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#64748b',
+              marginBottom: '0.5rem'
+            }}>
+              Prazo
+            </label>
+            <input
+              type="date"
+              value={formData.prazo}
+              onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+            />
           </div>
 
           <button
@@ -214,7 +303,7 @@ export default function ModalMeta({ isOpen, onClose, onSave }: ModalMetaProps) {
               transition: 'background-color 0.2s'
             }}
           >
-            {loading ? 'Salvando...' : 'Adicionar Meta'}
+            {loading ? 'Salvando...' : (editingMeta ? 'Salvar Alterações' : 'Adicionar Meta')}
           </button>
         </form>
       </div>

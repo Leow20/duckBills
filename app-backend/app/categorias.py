@@ -30,7 +30,8 @@ def listar_categorias() -> List[CategoriaSchema]:
 @router.post("/", response_model=CategoriaSchema, status_code=201)
 def criar_categoria(categoria: CategoriaSchema) -> CategoriaSchema:
     """Cria uma nova categoria."""
-    if any(cat.id == categoria.id for cat in categorias_db):
-        raise HTTPException(status_code=400, detail="ID de categoria já existe.")
+    # Gera um novo ID automaticamente
+    novo_id = max([cat.id for cat in categorias_db], default=0) + 1
+    categoria.id = novo_id
     categorias_db.append(categoria)
     return categoria

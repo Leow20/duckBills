@@ -31,3 +31,24 @@ def criar_orcamento(orcamento: OrcamentoSchema) -> OrcamentoSchema:
         raise HTTPException(status_code=400, detail="ID de orçamento já existe.")
     _orcamentos_db.append(orcamento)
     return orcamento
+
+
+@router.put("/{orcamento_id}", response_model=OrcamentoSchema)
+def atualizar_orcamento(orcamento_id: int, orcamento_atualizado: OrcamentoSchema) -> OrcamentoSchema:
+    """Atualiza um orçamento existente."""
+    for i, orcamento in enumerate(_orcamentos_db):
+        if orcamento.id == orcamento_id:
+            orcamento_atualizado.id = orcamento_id
+            _orcamentos_db[i] = orcamento_atualizado
+            return orcamento_atualizado
+    raise HTTPException(status_code=404, detail="Orçamento não encontrado.")
+
+
+@router.delete("/{orcamento_id}")
+def excluir_orcamento(orcamento_id: int) -> dict:
+    """Exclui um orçamento."""
+    for i, orcamento in enumerate(_orcamentos_db):
+        if orcamento.id == orcamento_id:
+            del _orcamentos_db[i]
+            return {"message": "Orçamento excluído com sucesso."}
+    raise HTTPException(status_code=404, detail="Orçamento não encontrado.")

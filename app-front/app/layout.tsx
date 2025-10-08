@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import { usePathname } from "next/navigation";
+import { DashboardProvider } from "./contexts/DashboardContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,14 +33,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable}`}
       >
-        {!isAuthPage && <Header />}
-        {!isAuthPage ? (
-          <main className="main-content">
-            {children}
-          </main>
-        ) : (
-          children
-        )}
+        <DashboardProvider>
+          {!isAuthPage && <Header />}
+          {!isAuthPage ? (
+            <main className="main-content">
+              {children}
+            </main>
+          ) : (
+            children
+          )}
+        </DashboardProvider>
       </body>
     </html>
   );

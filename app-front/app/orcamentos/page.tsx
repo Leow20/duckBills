@@ -7,18 +7,23 @@ import ModalOrcamento from '../components/ModalOrcamento';
 export default function Orcamentos() {
   const [modalOpen, setModalOpen] = useState(false);
   const [orcamentos, setOrcamentos] = useState<Array<{
+    id: number;
     categoria: string;
+    categoria_id: number;
     gasto: number;
     orcado: number;
     restante: number;
     icon: string;
     color: string;
+    periodo: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // formato YYYY-MM
+  const [editingOrcamento, setEditingOrcamento] = useState<Orcamento | null>(null);
 
   useEffect(() => {
     loadOrcamentos();
-  }, []);
+  }, [selectedMonth]);
 
   const loadOrcamentos = async () => {
     try {
@@ -42,9 +47,15 @@ export default function Orcamentos() {
       // Cria um mapa de categorias
       const categoriasMap = new Map(categoriasData.map(cat => [cat.id, cat.nome]));
 
-      // Calcula gastos por categoria
+      // Filtra despesas por mês selecionado
+      const despesasDoMes = despesasData.filter(despesa => {
+        const despesaMonth = new Date(despesa.data).toISOString().slice(0, 7);
+        return despesaMonth === selectedMonth;
+      });
+
+      // Calcula gastos por categoria apenas do mês selecionado
       const gastosPorCategoria = new Map<number, number>();
-      despesasData.forEach(despesa => {
+      despesasDoMes.forEach(despesa => {
         const atual = gastosPorCategoria.get(despesa.categoria_id) || 0;
         gastosPorCategoria.set(despesa.categoria_id, atual + despesa.valor);
       });
@@ -57,12 +68,15 @@ export default function Orcamentos() {
         const iconECor = iconsECores[nomeCategoria] || { icon: '💳', color: '#64748b' };
 
         return {
+          id: orcamento.id,
           categoria: nomeCategoria,
+          categoria_id: orcamento.categoria_id,
           gasto: gastoAtual,
           orcado: orcamento.valor_limite,
           restante: restante,
           icon: iconECor.icon,
-          color: iconECor.color
+          color: iconECor.color,
+          periodo: orcamento.periodo
         };
       });
 
@@ -72,12 +86,15 @@ export default function Orcamentos() {
       // Fallback para dados estáticos em caso de erro
       setOrcamentos([
         { 
+          id: 0,
           categoria: 'Alimentação', 
+          categoria_id: 0,
           gasto: 0, 
           orcado: 0, 
           restante: 0,
           icon: '🛒',
-          color: '#ef4444'
+          color: '#ef4444',
+          periodo: 'mensal'
         }
       ]);
     } finally {
@@ -87,6 +104,37 @@ export default function Orcamentos() {
 
   const handleSaveOrcamento = () => {
     loadOrcamentos(); // Recarrega os dados após salvar
+    setEditingOrcamento(null); // Limpa o estado de edição
+  };
+
+  const handleEditOrcamento = (orcamento: any) => {
+    // Converte o orçamento local para o formato da API
+    const orcamentoParaEdicao: Orcamento = {
+      id: orcamento.id,
+      categoria_id: orcamento.categoria_id,
+      usuario_id: 1, // Assumindo usuário fixo
+      valor_limite: orcamento.orcado,
+      periodo: orcamento.periodo
+    };
+    setEditingOrcamento(orcamentoParaEdicao);
+    setModalOpen(true);
+  };
+
+  const handleDeleteOrcamento = async (id: number) => {
+    if (confirm('Tem certeza que deseja excluir este orçamento?')) {
+      try {
+        await apiService.deleteOrcamento(id);
+        loadOrcamentos(); // Recarrega os dados após excluir
+      } catch (error) {
+        console.error('Erro ao excluir orçamento:', error);
+        alert('Erro ao excluir orçamento. Tente novamente.');
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingOrcamento(null);
   };
 
   const formatCurrency = (value: number) => {
@@ -106,16 +154,65 @@ export default function Orcamentos() {
     return '#10b981';
   };
 
+  const formatMonthName = (monthString: string) => {
+    const [year, month] = monthString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    }).replace(/^\w/, (c) => c.toUpperCase());
+  };
+
+  const getAvailableMonths = () => {
+    const months = [];
+    const currentDate = new Date();
+    
+    // Adiciona os últimos 6 meses e os próximos 6 meses
+    for (let i = -6; i <= 6; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+      months.push(date.toISOString().slice(0, 7));
+    }
+    
+    return months;
+  };
+
   return (
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 className="page-title">Orçamentos Mensais</h1>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setModalOpen(true)}
-        >
-          + Adicionar
-        </button>
+        <div>
+          <h1 className="page-title">Orçamentos Mensais</h1>
+          <p style={{ color: '#64748b', marginTop: '4px' }}>
+            Visualizando: {formatMonthName(selectedMonth)}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '2px solid #e2e8f0',
+              backgroundColor: 'white',
+              color: '#1e293b',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            {getAvailableMonths().map(month => (
+              <option key={month} value={month}>
+                {formatMonthName(month)}
+              </option>
+            ))}
+          </select>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setModalOpen(true)}
+          >
+            + Adicionar
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -137,7 +234,13 @@ export default function Orcamentos() {
               padding: '2rem',
               color: '#64748b'
             }}>
-              Nenhum orçamento encontrado. Adicione seu primeiro orçamento!
+              <div style={{ marginBottom: '8px' }}>📊</div>
+              <div style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
+                Nenhum orçamento para {formatMonthName(selectedMonth)}
+              </div>
+              <div>
+                Adicione orçamentos ou selecione outro mês para visualizar os dados.
+              </div>
             </div>
           ) : (
             orcamentos.map((orcamento, index) => {
@@ -235,6 +338,74 @@ export default function Orcamentos() {
                   </div>
                 )}
               </div>
+
+              {/* Botões de Ação */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                marginTop: '1rem',
+                paddingTop: '1rem',
+                borderTop: '1px solid #f1f5f9'
+              }}>
+                <button
+                  onClick={() => handleEditOrcamento(orcamento)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    backgroundColor: 'white',
+                    color: '#6366f1',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#eef2ff';
+                    e.currentTarget.style.borderColor = '#6366f1';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <span>📝</span> Editar
+                </button>
+                <button
+                  onClick={() => handleDeleteOrcamento(orcamento.id)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    backgroundColor: '#fef2f2',
+                    color: '#dc2626',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fecaca';
+                    e.currentTarget.style.borderColor = '#dc2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                    e.currentTarget.style.borderColor = '#fecaca';
+                  }}
+                >
+                  <span>🗑️</span> Excluir
+                </button>
+              </div>
             </div>
             );
             })
@@ -244,7 +415,7 @@ export default function Orcamentos() {
 
       {/* Resumo Geral */}
       <div className="card" style={{ marginTop: '2rem' }}>
-        <h2 className="card-title">Resumo do Mês</h2>
+        <h2 className="card-title">Resumo de {formatMonthName(selectedMonth)}</h2>
         <div className="stats-grid" style={{ marginTop: '1rem' }}>
           <div className="stat-card">
             <div className="stat-label">Total Orçado</div>
@@ -269,8 +440,9 @@ export default function Orcamentos() {
       
       <ModalOrcamento
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveOrcamento}
+        editingOrcamento={editingOrcamento}
       />
     </div>
   );
