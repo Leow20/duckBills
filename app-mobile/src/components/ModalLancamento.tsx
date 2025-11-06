@@ -263,7 +263,8 @@ export default function ModalLancamento({ isOpen, onClose, onSave, editingLancam
                 borderRadius: '8px',
                 fontSize: '1rem',
                 outline: 'none',
-                transition: 'border-color 0.2s'
+                transition: 'border-color 0.2s',
+                backgroundColor: 'white',
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
@@ -300,7 +301,8 @@ export default function ModalLancamento({ isOpen, onClose, onSave, editingLancam
                   borderRadius: '8px',
                   fontSize: '1rem',
                   outline: 'none',
-                  transition: 'border-color 0.2s'
+                  transition: 'border-color 0.2s',
+                  backgroundColor: 'white',
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
@@ -329,7 +331,9 @@ export default function ModalLancamento({ isOpen, onClose, onSave, editingLancam
                   borderRadius: '8px',
                   fontSize: '1rem',
                   outline: 'none',
-                  transition: 'border-color 0.2s'
+                  transition: 'border-color 0.2s',
+                  backgroundColor: 'white',
+                  color: '#374151'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
@@ -359,6 +363,7 @@ export default function ModalLancamento({ isOpen, onClose, onSave, editingLancam
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 backgroundColor: 'white',
+                color: '#374151',
                 cursor: 'pointer'
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
