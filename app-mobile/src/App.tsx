@@ -1,60 +1,53 @@
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, useLocation } from 'react-router-dom';
 import {
   IonApp,
-  IonIcon,
-  IonLabel,
   IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
+  IonPage,
+  IonContent,
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
 import Login from './pages/Login';
 import Home from './pages/Home';
-import Lancamentos from './pages/Lancamentos';
-
-
 import './global.css';
+import Lancamentos from './pages/Lancamentos';
+import Header from './components/Header';
+
 import { DashboardProvider } from './contexts/DashboardContext';
 
 setupIonicReact();
+
+const MainContent: React.FC = () => {
+  const location = useLocation();
+  const authPages = ['/login', '/cadastro', '/esqueci-senha'];
+  const isAuthPage = authPages.includes(location.pathname.toLowerCase());
+
+  return (
+    <>
+      {!isAuthPage && <Header />}
+      <IonRouterOutlet>
+        <Route exact path="/login">
+          <Login />
+        </Route>
+        <Route exact path="/home">
+          <Home />
+        </Route>
+        <Route path="/lancamentos">
+          <Lancamentos />
+        </Route>
+        <Route exact path="/">
+          <Redirect to="/login" />
+        </Route>
+      </IonRouterOutlet>
+    </>
+  );
+};
 
 const App: React.FC = () => (
   <IonApp>
     <DashboardProvider>
       <IonReactRouter>
-        <IonTabs>
-          <IonRouterOutlet>
-            <Route exact path="/Login">
-              <Login />
-            </Route>
-            <Route exact path="/Home">
-              <Home />
-            </Route>
-            <Route path="/Lancamentos">
-              <Lancamentos />
-            </Route>
-            <Route exact path="/">
-              <Redirect to="/Login" />
-            </Route>
-          </IonRouterOutlet>
-          <IonTabBar slot="bottom">
-            <IonTabButton tab="Login" href="/Login">
-              <IonIcon aria-hidden="true" icon={triangle} />
-              <IonLabel>Tab 1</IonLabel>
-            </IonTabButton>
-            <IonTabButton tab="Home" href="/Home">
-              <IonIcon aria-hidden="true" icon={ellipse} />
-              <IonLabel>Tab 2</IonLabel>
-            </IonTabButton>
-            <IonTabButton tab="Lancamentos" href="/Lancamentos">
-              <IonIcon aria-hidden="true" icon={square} />
-              <IonLabel>Tab 3</IonLabel>
-            </IonTabButton>
-          </IonTabBar>
-        </IonTabs>
+        <MainContent />
       </IonReactRouter>
     </DashboardProvider>
   </IonApp>

@@ -630,3 +630,11 @@ body {
 .password-strength-text.strong {
   color: #10b981;
 }
+
+.ion-page {
+  margin-top: 100px;
+}
+
+.header-md {
+    box-shadow: none !important;
+}

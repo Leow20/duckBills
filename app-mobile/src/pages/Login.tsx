@@ -69,7 +69,7 @@ export default function Login() {
   };
 
   return (
-    <IonPage>
+    <IonPage style={{'margin-top': 0}}>
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
