@@ -1,42 +1,37 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon } from '@ionic/react';
+import { useLocation } from 'react-router-dom';
+import { home, wallet, pricetag, trophy, person } from 'ionicons/icons';
 
 export default function Header() {
-  const pathname = usePathname();
+  const location = useLocation();
 
   const navItems = [
-    { href: '/', label: 'Visão Geral' },
-    { href: '/lancamentos', label: 'Lançamentos' },
-    { href: '/orcamentos', label: 'Orçamentos' },
-    { href: '/metas', label: 'Metas' },
+    { path: '/', label: 'Visão Geral', icon: home },
+    { path: '/lancamentos', label: 'Lançamentos', icon: wallet },
+    { path: '/orcamentos', label: 'Orçamentos', icon: pricetag },
+    { path: '/metas', label: 'Metas', icon: trophy },
   ];
 
   return (
-    <header className="header">
-      <div className="header-content">
-        <div className="logo">
-          <div className="logo-icon">D</div>
-          DuckBills
-        </div>
-        
-        <nav className="nav">
+    <IonHeader>
+      <IonToolbar>
+        <IonTitle>DuckBills</IonTitle>
+        <IonButtons slot="end">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-link ${pathname === item.href ? 'active' : ''}`}
+            <IonButton
+              key={item.path}
+              routerLink={item.path}
+              routerDirection="none"
+              color={location.pathname === item.path ? 'primary' : 'medium'}
             >
-              {item.label}
-            </Link>
+              <IonIcon icon={item.icon} />
+            </IonButton>
           ))}
-        </nav>
-
-        <div className="user-info">
-          L
-        </div>
-      </div>
-    </header>
+          <IonButton>
+            <IonIcon icon={person} />
+          </IonButton>
+        </IonButtons>
+      </IonToolbar>
+    </IonHeader>
   );
 }
